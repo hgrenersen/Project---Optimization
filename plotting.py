@@ -22,10 +22,10 @@ def plot(struct, plot_bars = False):
 
     title=f"The first {struct.num_of_fixed} nodes are fixed"
     plt.legend(points,bbox_to_anchor = (1 , 1), title=title)
-    cable_indices = struct.cables[:, :-1]
-
-    for point in cable_indices:
-        ax.plot(points[point, 0], points[point, 1], points[point, 2],"--", color="green")
+    if struct.cables.size:
+        cable_indices = struct.cables[:, :-1]
+        for point in cable_indices:
+            ax.plot(points[point, 0], points[point, 1], points[point, 2],"--", color="green")
 
     if plot_bars:
         bar_indices = struct.bars[:, :-1]
