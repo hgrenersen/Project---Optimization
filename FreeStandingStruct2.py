@@ -42,6 +42,7 @@ class FreeStandingStruct(TS.TensegrityStruct):
         TS.TensegrityStruct.__init__(self, num_of_nodes, num_of_fixed_nodes, nodes, masses, cables, bars, k, c, bar_density)
 
         self.penalty = penalty
+        self.X = self.nodes.ravel()[2:]
 
     def E(self):
         """
@@ -71,10 +72,14 @@ class FreeStandingStruct(TS.TensegrityStruct):
         penalty_grad = np.zeros(self.X.size) # additional gradient term
         x3 = self.nodes[:,-1]
         c_min = np.minimum(x3, np.zeros(self.num_of_nodes))
-        penalty_grad[2::3] = self.penalty*c_min
+        penalty_grad[::3] = self.penalty*c_min
         #print(penalty_grad)
-        grad = super().gradient() + penalty_grad
-
-        grad[:2] = 0
+        grad = super().gradient()[2:] + penalty_grad
+        #grad[:2] = 0
         #grad = grad[2:]
         return grad
+
+    def update_nodes(self, new_X):
+        self.nodes[0, 2] = new_X[0]
+        self.nodes[1:, ] = np.reshape(new_X[1:], (self.num_of_nodes-1, 3))
+        self.X = new_X

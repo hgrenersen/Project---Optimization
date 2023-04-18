@@ -56,7 +56,6 @@ class CableTensegrityStruct:
     """
 
     def __init__(self, num_of_nodes, num_of_fixed_nodes, nodes, masses, cables, k):
-       ### skal den docstringen være med her også?
        """
         num_of_nodes : int
             total number of nodes
@@ -75,7 +74,7 @@ class CableTensegrityStruct:
         k : int
             material parameter which affects the elastic energy
        """
-       #Føler vi må ha dette:
+       # Føler vi må ha dette:
        self.num_of_fixed = num_of_fixed_nodes
        self.nodes = nodes
        self.masses = masses 
@@ -83,13 +82,15 @@ class CableTensegrityStruct:
        self.k = k
     
        self.num_of_nodes = num_of_nodes
-       self.X = np.ravel(nodes) #Vector form
+       self.X = np.ravel(nodes) # Vector form
        self.num_of_free_nodes = num_of_nodes-num_of_fixed_nodes
 
     def E_ext(self):
         """
         Calculates the gravitational potential energy of
         the external loads in the structure
+
+        :return: Gravitational potential energy of all external loads
         """
         mass_indices = self.masses[:, 0].astype(np.int64)
         return np.dot(self.masses[:, 1],self.nodes[mass_indices, 2])
@@ -99,6 +100,8 @@ class CableTensegrityStruct:
         """
         Calculates the sum of the elastic energies of the
         cables in the structure.
+
+        :return: Sum of elastic energies of the cables
         """
         energy=0
         for cable in self.cables:
@@ -114,6 +117,8 @@ class CableTensegrityStruct:
     def E(self):
         """
         Calculates the total energy of the structure
+
+        :return: Total energy of the structure
         """
         return self.E_ext()+self.E_cable_elast()
 
@@ -121,6 +126,8 @@ class CableTensegrityStruct:
         """
         Calculates the gradient of our objective function
         and returns a 1D ndarray of length 3*the number of nodes
+
+        :return: The gradient of the energy function
         """
         grad = np.zeros((self.num_of_nodes, 3)) 
         for node_index in range(self.num_of_fixed, self.num_of_nodes): #only iterate over each free node
@@ -155,56 +162,9 @@ class CableTensegrityStruct:
         return grad
     
     def update_nodes(self, new_X):
+        """
+        Function to ensure that the properties of our object are updated properly when we find a new configuration
+        :param new_X: Vector of length 3 times the number of nodes
+        """
         self.nodes = np.reshape(new_X, (self.num_of_nodes, 3))
         self.X = new_X
-    
-    def plot(self):
-        """
-        Returns a plot of the structure
-        """
-        fig= plt.figure()
-        ax = fig.add_subplot(projection='3d')
-        # Set the axis labels
-        ax.set_xlabel('x')
-        ax.set_ylabel('y')
-        ax.set_zlabel('z')
-
-        points = self.nodes
-        for point in points:
-            ax.scatter(point[0], point[1], point[2])
-        title="The first " +str( self.num_of_fixed) + " nodes are fixed" 
-        plt.legend(points,bbox_to_anchor = (1 , 1), title=title)
-        cable_indices = self.cables[:, (0, 1)]
-        for point in cable_indices:
-            ax.plot(points[point, 0], points[point, 1], points[point, 2],"--", color="green")
-        return fig, ax
-
-    def animate(self):
-        """
-        Uses the plot() function in order to animate the structure
-        providing a full 3d-overview of the structure
-        """
-        fig, ax = self.plot()
-        
-        for angle in range(0, 360):
-            ax.view_init(30, angle)
-            plt.draw()
-            plt.pause(.005)
-            
-    def textbox(self):
-        """
-        Same as the plot function, but with text for our 
-        parameters
-        """
-        fig, ax = self.plot()
-        textstr = "Our structure has the following connections and parameters\n"
-        i=0
-        for cable in self.cables:
-            #textstr+=r"Node " + str(cable[0]+1) +" is connected to node " + str(cable[1]+1) +\
-            #      " by a cable with resting length " + str(cable[2]) + "\n"
-            textstr += r"$l_{%s %s}$: %s "%(cable[0]+1, cable[1]+1, cable[2])+"   "
-        textstr+= "k = " +str(self.k)
-        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        ax.text(0.05, 0.95, 0.5, s=textstr, transform=ax.transAxes, fontsize=12,
-        verticalalignment='top', bbox=props)
-        return fig, ax

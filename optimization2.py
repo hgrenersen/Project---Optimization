@@ -1,5 +1,7 @@
 import numpy as np
 import copy
+import plotting
+import matplotlib.pyplot as plt
 
 def Wolfe_step(struct_copy, original_X, alpha, pk):
     next_x = original_X+alpha*pk
@@ -58,6 +60,7 @@ def BFGS(struct,
     Calculates a stable configuration for the structure, using BFGS
     and Wolfe conditions
     """
+    print("The penalty is", str(struct.penalty))
     X = struct.X
     H = np.eye(X.size)
     iter = 0
@@ -84,7 +87,14 @@ def BFGS(struct,
         #grad_k = struct.gradient() #finds new gradient
 
         s = X-X_old
+        print("s:", s)
+
         y = grad-grad_old
+        print("y:", y)
+
+        plotting.plot(struct)
+        plt.show()
+
         r = 1/np.inner(y, s)
 
         if iter == 0:
@@ -198,8 +208,9 @@ def quadratic_penalty_method(struct, penalty0, tolerances, maxiter_BFGS = 50, to
     for k in range(K):
         struct_opt = BFGS(struct_opt, tol=tolerances[k], maxiter=maxiter_BFGS, )
         norm_grad = np.linalg.norm(struct_opt.gradient())
-
+        print("Iterasjon #", str(k))
         if norm_grad <= tol:
+            print("Ferdig")
             return struct_opt
 
         struct_opt.penalty *= 10
