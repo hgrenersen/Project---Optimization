@@ -6,6 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="d715f4db-adb7-4b4f-8c37-eddf002c17a2" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Optimization.iml" beforeDir="false" afterPath="$PROJECT_DIR$/Optimization.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/optimering.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/optimering.ipynb" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
