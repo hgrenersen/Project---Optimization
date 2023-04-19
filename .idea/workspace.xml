@@ -6,12 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="d715f4db-adb7-4b4f-8c37-eddf002c17a2" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CableTensegrityStruct.py" beforeDir="false" afterPath="$PROJECT_DIR$/CableTensegrityStruct.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FreeStandingStruct.py" beforeDir="false" afterPath="$PROJECT_DIR$/FreeStandingStruct.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/TensegrityStruct.py" beforeDir="false" afterPath="$PROJECT_DIR$/TensegrityStruct.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/optimering.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/optimering.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/optimization.py" beforeDir="false" afterPath="$PROJECT_DIR$/optimization.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/plotting.py" beforeDir="false" afterPath="$PROJECT_DIR$/plotting.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -217,6 +212,7 @@
       <workItem from="1681837382875" duration="1762000" />
       <workItem from="1681839315153" duration="533000" />
       <workItem from="1681851674015" duration="14951000" />
+      <workItem from="1681884955084" duration="1096000" />
     </task>
     <servers />
   </component>
