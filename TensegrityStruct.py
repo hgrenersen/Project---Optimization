@@ -33,7 +33,7 @@ class TensegrityStruct(CTS.CableTensegrityStruct):
         Makes use of CableTensegrityStruct.E() and includes the contributions to the energy from the bars
 
     """
-    def __init__(self, num_of_nodes, num_of_fixed_nodes, nodes, masses, cables, bars, k, c, bar_density):
+    def __init__(self, num_of_fixed_nodes, nodes, masses, cables, bars, k, c, bar_density):
         """
 
         bars : ndarray
@@ -44,7 +44,7 @@ class TensegrityStruct(CTS.CableTensegrityStruct):
         bar_density : float
             The density of the bars, scaled by the acceleration of gravity
         """
-        CTS.CableTensegrityStruct.__init__(self, num_of_nodes, num_of_fixed_nodes, nodes, masses, cables, k)
+        CTS.CableTensegrityStruct.__init__(self, num_of_fixed_nodes, nodes, masses, cables, k)
 
         self.bars = bars
         self.bar_density = bar_density
@@ -54,7 +54,8 @@ class TensegrityStruct(CTS.CableTensegrityStruct):
         """
         Makes use of CableTensegrityStruct.gradient() and includes the contribution of the bars to the gradient.
         """
-        grad = np.zeros((self.num_of_nodes, 3))
+        #grad = np.zeros((self.num_of_nodes, 3))
+        grad = np.zeros((self.num_of_free_nodes,3))
         # The for loop is analogous to the for loop in the gradient for CableTensegrityStruct.gradient()
         # but here we instead consider cables
         for node_index in range(self.num_of_fixed, self.num_of_nodes):
@@ -71,6 +72,7 @@ class TensegrityStruct(CTS.CableTensegrityStruct):
 
                 grad_node += self.c / rest_length ** 2 * (node_i - node_j) * (1 - rest_length / dist)
                 grad_node[-1] += self.bar_density * rest_length / 2
+                print(self.bar_density * rest_length / 2)
 
             for bar in bars_ji:
                 rest_length = bar[2]
@@ -82,7 +84,7 @@ class TensegrityStruct(CTS.CableTensegrityStruct):
                 grad_node += self.c / rest_length ** 2 * (node_i - node_j) * (1 - rest_length / dist)
                 grad_node[-1] += self.bar_density * rest_length / 2
 
-            grad[node_index, :] = grad_node
+            grad[node_index-self.num_of_fixed, :] = grad_node
         grad = grad.ravel()
         grad += super().gradient()
         return grad
@@ -95,12 +97,14 @@ class TensegrityStruct(CTS.CableTensegrityStruct):
         """
         if self.cables.size: # Ensures that we have cables present
             return super().E_cable_elast()
+        else:
+            return 0.
 
     def E_bar_elast(self):
         """
         Calculates the sum of the elastic energies stored in the bars
         """
-        energy = 0
+        energy = 0.
         for bar in self.bars:
             node1 = self.nodes[bar[0]]
             node2 = self.nodes[bar[1]]
@@ -115,7 +119,7 @@ class TensegrityStruct(CTS.CableTensegrityStruct):
         """
         Calculates the sum of the gravitational potential energy of the bars
         """
-        energy = 0
+        energy = 0.
         for bar in self.bars:
             node1 = self.nodes[bar[0]]
             node2 = self.nodes[bar[1]]
@@ -131,11 +135,3 @@ class TensegrityStruct(CTS.CableTensegrityStruct):
         Makes use of CableTensegrityStruct.E() and includes the contributions to the energy from the bars
         """
         return super().E() + self.E_bar_elast() + self.E_bar_grav()
-
-    def plot(self):
-        fig, ax = super().plot()
-        points = self.nodes
-        bar_indices = self.bars[:, (0, 1)]
-        for point in bar_indices:
-            ax.plot(points[point, 0], points[point, 1], points[point, 2], color="blue")
-        return fig, ax

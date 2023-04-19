@@ -64,27 +64,30 @@ def BFGS(struct,
     E_val = struct.E()
     grad = struct.gradient()
     norm = np.linalg.norm(grad)
-    norms = [norm]
+    if return_norms:
+        norms = [norm]
     if return_images:
         imgs = []
     while norm>tol and iter<maxiter:
+        iter+=1
         if return_images:
             imgs.append(plot(struct)[0])
-        #plt.close()
-        p = -H@grad #finds descent direction
+        p = -H @ grad #finds descent direction
 
         X_old = X.copy()  #saves previous X-value and gradient
         grad_old = grad.copy()
 
+
         X, E_val, grad = StrongWolfe(struct, p, E_val, grad, alpha,c1,c2, max_extrapolation_iterations, max_interpolation_iterations, rho)
-        #X, E_val, grad = Wolfe(struct, p, E_val, grad, c1, c2, alpha, 200)
         struct.update_nodes(X) #updates nodes of the structure
 
-        #E_val = struct.E() #finds new function values
-        #grad_k = struct.gradient() #finds new gradient
+        if np.array_equal(X, X_old) or np.array_equal(grad, grad_old):
+            print("LIKE")
+            break
 
         s = X-X_old
         y = grad-grad_old
+
         r = 1/np.inner(y, s)
 
         if iter == 0:
@@ -93,18 +96,15 @@ def BFGS(struct,
         H += -r*(np.outer(s, z) + np.outer(z, s)) + r*(r*np.inner(y, z)+1)*np.outer(s, s)
 
         norm = np.linalg.norm(grad)
-        norms.append(norm)
-        iter+=1
-    print("iter: ",iter)
-    if (not return_images) and (not return_norms):
-        return struct
-    else:
-        result = [struct]
         if return_norms:
-            result.append(np.array(norms))
-        if return_images:
-            result.append(imgs)
-        return result
+            norms.append(norm)
+
+    print(f"BFGS used {iter} iterations")
+    if return_images:
+        if return_norms:
+            return imgs, np.array(norms)
+    if return_norms:
+        return np.array(norms)
 
 def NextStep(struct_copy, original_X, alpha, p):
     next_x = original_X+alpha*p
@@ -188,20 +188,45 @@ def StrongWolfe(struct, p,
     # return the next iterate as well as the function value and gradient there
     # (in order to save time in the outer iteration; we have had to do these
     # computations anyway)
+    #if np.array_equal(next_x, original_X):
+     #   print("x-ene er like!!!!")
+      #  print(next_x.dtype)
+       # print("alpha*p", alphaR*p)
+        #print("next_x", next_x)
+        #print("original_x", original_X)
+        #print("next_x??", original_X + alphaR*p)
+        #print("p:", p)
+        #print("alpha:", alphaR)
     return next_x, next_E, next_grad
 
 
-def quadratic_penalty_method(struct, penalty0, tolerances, maxiter_BFGS = 50, tol=1e-12):
-    struct_opt = copy.deepcopy(struct)
-    struct_opt.penalty = penalty0
+def quadratic_penalty_method(struct, penalty0, tolerances, maxiter_BFGS = 50, TOL=1e-12, max_penalty = 1e6):
+    #struct_copy = copy.deepcopy(struct)
+    #struct_copy.penalty = penalty0
+    struct.penalty = penalty0
     K = tolerances.size
     for k in range(K):
-        struct_opt = BFGS(struct_opt, tol=tolerances[k], maxiter=maxiter_BFGS, )
-        norm_grad = np.linalg.norm(struct_opt.gradient())
+        BFGS(struct, tol=tolerances[k], maxiter=maxiter_BFGS)
+        norm_grad = np.linalg.norm(struct.gradient())
 
-        if norm_grad <= tol:
-            return struct_opt
+        if norm_grad <= TOL:
+            break
 
-        struct_opt.penalty *= 10
+        if struct.penalty < max_penalty:
+            struct.penalty *= 10
 
-    return struct_opt
+
+"""
+def barrier_method(struct, penalty0, tolerances, maxiter_BFGS = 50, TOL=1e-12, max_penalty = 1e6):
+    struct.penalty = penalty0
+    K = tolerances.size
+    for k in range(K):
+        BFGS(struct, tol=tolerances[k], maxiter=maxiter_BFGS)
+        norm_grad = np.linalg.norm(struct.gradient())
+
+        if norm_grad <= TOL:
+            break
+
+        if struct.penalty < max_penalty:
+            struct.penalty /= 10
+"""

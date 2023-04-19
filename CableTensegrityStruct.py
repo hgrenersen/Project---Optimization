@@ -55,7 +55,7 @@ class CableTensegrityStruct:
         providing a full 3d-overview of the structure
     """
 
-    def __init__(self, num_of_nodes, num_of_fixed_nodes, nodes, masses, cables, k):
+    def __init__(self, num_of_fixed_nodes, nodes, masses, cables, k):
        """
         num_of_nodes : int
             total number of nodes
@@ -77,13 +77,20 @@ class CableTensegrityStruct:
        # Føler vi må ha dette:
        self.num_of_fixed = num_of_fixed_nodes
        self.nodes = nodes
-       self.masses = masses 
+       self.masses = masses
        self.cables = cables
        self.k = k
     
-       self.num_of_nodes = num_of_nodes
-       self.X = np.ravel(nodes) # Vector form
-       self.num_of_free_nodes = num_of_nodes-num_of_fixed_nodes
+       self.num_of_nodes = len(nodes)
+       self.X = np.ravel(nodes[num_of_fixed_nodes:]) # Vector form
+       self.num_of_free_nodes = self.num_of_nodes-num_of_fixed_nodes
+
+
+       self.masses = np.zeros(self.num_of_nodes)
+       if masses.size:
+           for i in range(len(masses)):
+               mass = masses[i]
+               self.masses[int(mass[0])] = mass[1]
 
     def E_ext(self):
         """
@@ -92,8 +99,9 @@ class CableTensegrityStruct:
 
         :return: Gravitational potential energy of all external loads
         """
-        mass_indices = self.masses[:, 0].astype(np.int64)
-        return np.dot(self.masses[:, 1],self.nodes[mass_indices, 2])
+        #mass_indices = self.masses[:, 0].astype(np.int64)
+        #return np.dot(self.masses[:, 1],self.nodes[mass_indices, 2])
+        return np.dot(self.masses, self.nodes[:,2])
 
 
     def E_cable_elast(self):
@@ -129,7 +137,8 @@ class CableTensegrityStruct:
 
         :return: The gradient of the energy function
         """
-        grad = np.zeros((self.num_of_nodes, 3)) 
+        #grad = np.zeros((self.num_of_nodes, 3))
+        grad = np.zeros((self.num_of_free_nodes, 3))
         for node_index in range(self.num_of_fixed, self.num_of_nodes): #only iterate over each free node
             grad_node = np.zeros(3) #gradient with respect to a single node
             cables_ij = self.cables[self.cables[:, 0]==node_index] #cables e_ij
@@ -150,14 +159,15 @@ class CableTensegrityStruct:
     
                 node_j = self.nodes[cable[0]]
                 node_i = self.nodes[cable[1]]
-                dist = np.linalg.norm(node_j - node_i)
+                dist = np.linalg.norm(node_i - node_j)
                 
                 if dist > rest_length:
-                    grad_node-=self.k/rest_length**2*(node_j-node_i)*(1-rest_length/dist)
+                    grad_node+=self.k/rest_length**2*(node_i-node_j)*(1-rest_length/dist)
     
-            grad_node[-1] += self.masses[self.masses[:,0] == node_index, 1]   
-    
-            grad[node_index,:] = grad_node
+            #grad_node[-1] += self.masses[self.masses[:,0] == node_index, 1]
+            grad_node[-1] += self.masses[node_index]
+
+            grad[node_index-self.num_of_fixed, :] = grad_node
         grad = grad.ravel()
         return grad
     
@@ -166,5 +176,5 @@ class CableTensegrityStruct:
         Function to ensure that the properties of our object are updated properly when we find a new configuration
         :param new_X: Vector of length 3 times the number of nodes
         """
-        self.nodes = np.reshape(new_X, (self.num_of_nodes, 3))
+        self.nodes[self.num_of_fixed:,:] = np.reshape(new_X, (self.num_of_free_nodes, 3))
         self.X = new_X

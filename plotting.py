@@ -3,10 +3,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import TensegrityStruct as TS
 importlib.reload(TS)
-import FreeStandingStruct2 as FSS
+import FreeStandingStruct as FSS
 importlib.reload(FSS)
 
-def plot(struct):
+def plot_structure(struct):
     """
     Returns a plot of the structure
     """
@@ -18,15 +18,15 @@ def plot(struct):
     ax.set_ylabel('y')
     ax.set_zlabel('z')
     points = struct.nodes
-    for i in range(struct.num_of_free_nodes):
+    for i in range(struct.num_of_fixed):
         point = points[i]
         ax.scatter(point[0], point[1], point[2], color = "red", label = "fixed")
 
-    for i in range(struct.num_of_free_nodes, struct.num_of_nodes):
+    for i in range(struct.num_of_fixed, struct.num_of_nodes):
         point = points[i]
         ax.scatter(point[0], point[1], point[2], color = "blue", label="free")
 
-    title=f"The first {struct.num_of_fixed} nodes are fixed"
+    #title=f"The first {struct.num_of_fixed} nodes are fixed"
     #plt.legend(np.around(points, decimals = 3), bbox_to_anchor = (1 , 1), title=title)
 
     if struct.cables.size:
@@ -39,9 +39,28 @@ def plot(struct):
             bar_indices = struct.bars[:, :-1]
             for point in bar_indices:
                 ax.plot(points[point, 0], points[point, 1], points[point, 2],"-", color="hotpink", label="bar")
+
+    # Creating legends
+
     handles, labels = plt.gca().get_legend_handles_labels()
-    by_label = dict(zip(labels, handles))
-    plt.legend(by_label.values(), by_label.keys())
+    legend_dict = dict(zip(labels, handles))
+
+    node_dict = {}
+    if "fixed" in legend_dict:
+        node_dict["fixed"] = legend_dict["fixed"]
+    if "free" in legend_dict:
+        node_dict["free"] = legend_dict["free"]
+
+    edge_dict = {}
+    if "cable" in legend_dict:
+        edge_dict["cable"] = legend_dict["cable"]
+    if "bar" in legend_dict:
+        edge_dict["bar"] = legend_dict["bar"]
+
+    node_legend = plt.legend(node_dict.values(), node_dict.keys(), loc = 'upper left', title = "Nodes")
+
+    ax.add_artist(node_legend)
+    ax.legend(edge_dict.values(), edge_dict.keys(), loc='upper right', title = "Edges")
     return fig, ax
 
 def animate(struct):
@@ -80,6 +99,7 @@ def convergence_plot(norms):
     ax.plot(np.arange(norms.size), norms)
     ax.set_xlabel("Iteration number")
     ax.set_ylabel("Gradient norm")
+    ax.grid()
     return ax
 
 def nodes(struct, ax):
