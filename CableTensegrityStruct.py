@@ -113,8 +113,8 @@ class CableTensegrityStruct:
         """
         energy=0
         for cable in self.cables:
-            node1 = self.nodes[cable[0]]
-            node2 = self.nodes[cable[1]]
+            node1 = self.nodes[int(cable[0])]
+            node2 = self.nodes[int(cable[1])]
             dist = np.linalg.norm(node1-node2)
 
             rest_length = cable[2]
@@ -137,7 +137,7 @@ class CableTensegrityStruct:
 
         :return: The gradient of the energy function
         """
-        #grad = np.zeros((self.num_of_nodes, 3))
+       
         grad = np.zeros((self.num_of_free_nodes, 3))
         for node_index in range(self.num_of_fixed, self.num_of_nodes): #only iterate over each free node
             grad_node = np.zeros(3) #gradient with respect to a single node
@@ -147,8 +147,8 @@ class CableTensegrityStruct:
             for cable in cables_ij:
                 rest_length = cable[2]
     
-                node_i = self.nodes[cable[0]]
-                node_j = self.nodes[cable[1]]
+                node_i = self.nodes[int(cable[0])]
+                node_j = self.nodes[int(cable[1])]
                 dist = np.linalg.norm(node_i - node_j)
     
                 if dist > rest_length:
@@ -157,19 +157,17 @@ class CableTensegrityStruct:
             for cable in cables_ji:
                 rest_length = cable[2]
     
-                node_j = self.nodes[cable[0]]
-                node_i = self.nodes[cable[1]]
+                node_j = self.nodes[int(cable[0])]
+                node_i = self.nodes[int(cable[1])]
                 dist = np.linalg.norm(node_i - node_j)
                 
                 if dist > rest_length:
                     grad_node+=self.k/rest_length**2*(node_i-node_j)*(1-rest_length/dist)
     
-            #grad_node[-1] += self.masses[self.masses[:,0] == node_index, 1]
             grad_node[-1] += self.masses[node_index]
 
             grad[node_index-self.num_of_fixed, :] = grad_node
         grad = grad.ravel()
-        print("graident i CTS")
         return grad
     
     def update_nodes(self, new_X):

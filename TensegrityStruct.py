@@ -66,19 +66,19 @@ class TensegrityStruct(CTS.CableTensegrityStruct):
             for bar in bars_ij:
                 rest_length = bar[2]
 
-                node_i = self.nodes[bar[0]]
-                node_j = self.nodes[bar[1]]
+                node_i = self.nodes[int(bar[0])]
+                node_j = self.nodes[int(bar[1])]
                 dist = np.linalg.norm(node_i - node_j)
 
                 grad_node += self.c / rest_length ** 2 * (node_i - node_j) * (1 - rest_length / dist)
                 grad_node[-1] += self.bar_density * rest_length / 2
-                print(self.bar_density * rest_length / 2)
+                
 
             for bar in bars_ji:
                 rest_length = bar[2]
 
-                node_i = self.nodes[bar[1]]
-                node_j = self.nodes[bar[0]]
+                node_i = self.nodes[int(bar[1])]
+                node_j = self.nodes[int(bar[0])]
                 dist = np.linalg.norm(node_i - node_j)
 
                 grad_node += self.c / rest_length ** 2 * (node_i - node_j) * (1 - rest_length / dist)
@@ -87,14 +87,13 @@ class TensegrityStruct(CTS.CableTensegrityStruct):
             grad[node_index-self.num_of_fixed, :] = grad_node
         grad = grad.ravel()
         grad += super().gradient()
-        print("brukte gradient i TS")
         return grad
 
     def E_cable_elast(self):
         """
-        Function to calculate the elastic energy in the cables if there are any present.
+        Function to calculate the sum of the elastic energies
+        in the cables if there are any present.
 
-        :return: Sum of the elastic energies in cables in the structure
         """
         if self.cables.size: # Ensures that we have cables present
             return super().E_cable_elast()
@@ -107,11 +106,11 @@ class TensegrityStruct(CTS.CableTensegrityStruct):
         """
         energy = 0.
         for bar in self.bars:
-            node1 = self.nodes[bar[0]]
-            node2 = self.nodes[bar[1]]
+            node1 = self.nodes[int(bar[0])]
+            node2 = self.nodes[int(bar[1])]
             dist = np.linalg.norm(node1 - node2)
-
             rest_length = bar[2]
+            
 
             energy += self.c / (2 * rest_length ** 2) * (dist - rest_length) ** 2
         return energy
@@ -122,9 +121,8 @@ class TensegrityStruct(CTS.CableTensegrityStruct):
         """
         energy = 0.
         for bar in self.bars:
-            node1 = self.nodes[bar[0]]
-            node2 = self.nodes[bar[1]]
-            dist = np.linalg.norm(node1 - node2)
+            node1 = self.nodes[int(bar[0])]
+            node2 = self.nodes[int(bar[1])]
 
             rest_length = bar[2]
 
@@ -133,6 +131,7 @@ class TensegrityStruct(CTS.CableTensegrityStruct):
 
     def E(self):
         """
-        Makes use of CableTensegrityStruct.E() and includes the contributions to the energy from the bars
+        Makes use of CableTensegrityStruct.E() and includes 
+        the contributions to the energy from the bars
         """
         return super().E() + self.E_bar_elast() + self.E_bar_grav()

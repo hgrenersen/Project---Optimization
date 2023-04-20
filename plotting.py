@@ -30,13 +30,13 @@ def plot_structure(struct):
     #plt.legend(np.around(points, decimals = 3), bbox_to_anchor = (1 , 1), title=title)
 
     if struct.cables.size:
-        cable_indices = struct.cables[:, :-1]
+        cable_indices = struct.cables[:, :-1].astype(dtype=np.int16)
         for point in cable_indices:
             ax.plot(points[point, 0], points[point, 1], points[point, 2],"--", color="green", label="cable")
 
     if type(struct) == TS.TensegrityStruct or type(struct) == FSS.FreeStandingStruct:
         if struct.bars.size:
-            bar_indices = struct.bars[:, :-1]
+            bar_indices = struct.bars[:, :-1].astype(dtype=np.int16)
             for point in bar_indices:
                 ax.plot(points[point, 0], points[point, 1], points[point, 2],"-", color="hotpink", label="bar")
 
