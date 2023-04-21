@@ -14,7 +14,7 @@ def BFGS(struct,
          return_images = False):
     """
     Calculates a stable configuration for the structure, using BFGS
-    and Wolfe conditions
+    and Wolfe conditions.
     """
     X = struct.X
     H = np.eye(X.size)
@@ -24,16 +24,13 @@ def BFGS(struct,
     norm = np.linalg.norm(grad)
     if return_norms:
         norms = [norm]
-    if return_images:
-        imgs = []
     while norm>tol and iter<maxiter:
         iter+=1
-        if return_images:
-            imgs.append(plot(struct)[0])
+    
         p = -H @ grad #finds descent direction
 
-        X_old = X.copy()  #saves previous X-value and gradient
-        grad_old = grad.copy()
+        X_old = X.copy()  #saves previous X-value 
+        grad_old = grad.copy() #saves previous gradient
 
 
         X, E_val, grad = StrongWolfe(struct, p, E_val, grad, alpha,c1,c2, max_extrapolation_iterations, max_interpolation_iterations, rho)
@@ -59,7 +56,7 @@ def BFGS(struct,
     print(f"BFGS used {iter} iterations")
     if return_images:
         if return_norms:
-            return imgs, np.array(norms)
+            return np.array(norms)
     if return_norms:
         return np.array(norms)
 
@@ -79,34 +76,45 @@ def StrongWolfe(struct, p,
                 max_extrapolation_iterations = 50,
                 max_interpolation_iterations = 20,
                 rho = 2.0):
+    """
+    Implementation of Strong Wolfe conditions for step size selection. When 
+    the step size is chosen, we return the next step, defined by p and this
+    chosen step, as we had to calculate this next step in order to choose the
+    step size. 
+    This approach is inspired by the code provided in the exercies
+    in the course.
+    """
     struct_copy = copy.deepcopy(struct)
     initial_descent = np.dot(grad, p)
     original_X = struct.X.copy()
 
-    # initialise the bounds of the bracketing interval
+    # Making an interval for which we consider possible step sizes to lie in.
+    # This will be updated throughout the code
     alphaR = alpha
     alphaL = 0.0
 
+    # The next five following lines of code are repeated any time a step 
+    # size is evaluated.
+    # Making a step with our starting stepsize, alpha.
     next_x, next_E, next_grad = NextStep(struct_copy, original_X, alphaR, p)
 
+    # Implementation of conditions we want to consider in order to 
+    # determine our stepsize.
     Armijo = (next_E <= E_val+c1*alphaR*initial_descent)
     descentR = np.inner(p, next_grad)
     curvatureLow = (descentR >= c2*initial_descent)
     curvatureHigh = (descentR <= -c2*initial_descent)
 
     iter = 0
-    # We start by increasing alphaR as long as Armijo and curvatureHigh hold,
-    # but curvatureLow fails (that is, alphaR is definitely too small).
-    # Note that curvatureHigh is automatically satisfied if curvatureLow fails.
-    # Thus we only need to check whether Armijo holds and curvatureLow fails.
+
+    # As long as alphaR is too small, we know that Armijo and curvatureLow fails
+    #  (therefore also curvatureHigh fails), and we therefore increase our upper 
+    # bound, while updating the lower bound to the current stepsize considered
     while (iter < max_extrapolation_iterations and (Armijo and (not curvatureLow))):
         alphaL = alphaR
         alphaR *= rho
 
-        # update function value and gradient
         next_x, next_E, next_grad = NextStep(struct_copy, original_X, alphaR, p)
-
-        # update the Armijo and Wolfe conditions
 
         Armijo = (next_E <= E_val+c1*alphaR*initial_descent)
         descentR = np.inner(p, next_grad)
@@ -118,51 +126,50 @@ def StrongWolfe(struct, p,
     # and alphaR is either satisfactory or too large
     # (Unless we have stopped because we used too many iterations. There
     # are at the moment no exceptions raised if this is the case.)
+
+    # Now, hopefully, the only problem should be that alphaL is too small 
+    # and potentially that alphaR is too high. Unless iter > max_extrapolation_
+    # iterations
+
     alpha = alphaR
     iter = 0
-    # Use bisection in order to find a step length alpha that satisfies
-    # all conditions.
+    # Below we use bisection in order to choose our alpha
     while (iter < max_interpolation_iterations and (not (Armijo and curvatureLow and curvatureHigh))):
         if (Armijo and (not curvatureLow)):
-            # the step length alpha was still too small
-            # replace the former lower bound with alpha
+            # Similarly to the previous situation, the stepsizes are 
+            # too small and we rise our lower bound to our current stepsize
             alphaL = alpha
         else:
-            # the step length alpha was too large
-            # replace the upper bound with alpha
+            # The other alternative, alpha is too large so we decrease
+            # the upper bound
             alphaR = alpha
         iter += 1
 
-        # choose a new step length as the mean of the new bounds
+        # The mean of our interval is then chosen as the current step size
         alpha = (alphaL+alphaR)/2
-        # update function value and gradient
+        
         next_x, next_E, next_grad = NextStep(struct_copy, original_X, alphaR, p)
-        # update the Armijo and Wolfe conditions
+        
         Armijo = (next_E <= E_val+c1*alphaR*initial_descent)
         descentR = np.inner(p, next_grad)
         curvatureLow = (descentR >= c2*initial_descent)
         curvatureHigh = (descentR <= -c2*initial_descent)
-    # return the next iterate as well as the function value and gradient there
-    # (in order to save time in the outer iteration; we have had to do these
-    # computations anyway)
+  
     return next_x, next_E, next_grad
 
 
-def quadratic_penalty_method(struct, penalty0, tolerances, maxiter_BFGS = 50, TOL=1e-12, max_penalty = 1e6, return_norms=False):
+def quadratic_penalty_method(struct, penalty0, tolerances, maxiter_BFGS = 50, TOL=1e-12, max_penalty = 1e6):
+    """
+    Uses BFGS to calculate 
+    """
     struct.penalty = penalty0
     K = tolerances.size
-    if return_norms:
-        norms_tot = np.array([])
     for k in range(K):
-        if return_norms:
-            norms = BFGS(struct, tol=tolerances[k], maxiter=maxiter_BFGS, return_norms=True)
-            norms_tot = np.concatenate((norms_tot, norms))
-        else:
-            BFGS(struct, tol=tolerances[k], maxiter=maxiter_BFGS)
+        BFGS(struct, tol=tolerances[k], maxiter=maxiter_BFGS)
         norm_grad = np.linalg.norm(struct.gradient())
+
         if norm_grad <= TOL:
             break
+
         if struct.penalty < max_penalty:
             struct.penalty *= 10
-    if return_norms:
-        return norms_tot

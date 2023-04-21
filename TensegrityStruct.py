@@ -6,7 +6,8 @@ import numpy as np
 
 class TensegrityStruct(CTS.CableTensegrityStruct):
     """
-    A class that inherits from CableTensegrityStruct, but also has implementation for bars in the structure.
+    A class that inherits from CableTensegrityStruct, 
+    but also has implementation for bars in the structure.
 
     ...
 
@@ -54,9 +55,9 @@ class TensegrityStruct(CTS.CableTensegrityStruct):
         """
         Makes use of CableTensegrityStruct.gradient() and includes the contribution of the bars to the gradient.
         """
-        #grad = np.zeros((self.num_of_nodes, 3))
         grad = np.zeros((self.num_of_free_nodes,3))
-        # The for loop is analogous to the for loop in the gradient for CableTensegrityStruct.gradient()
+        # The for loop is analogous to the for loop in the gradient 
+        # for CableTensegrityStruct.gradient()
         # but here we instead consider cables
         for node_index in range(self.num_of_fixed, self.num_of_nodes):
             grad_node = np.zeros(3)
@@ -71,7 +72,8 @@ class TensegrityStruct(CTS.CableTensegrityStruct):
                 dist = np.linalg.norm(node_i - node_j)
 
                 grad_node += self.c / rest_length ** 2 * (node_i - node_j) * (1 - rest_length / dist)
-                grad_node[-1] += self.bar_density * rest_length / 2
+                grad_node[-1] += self.bar_density * rest_length / 2 # Distribution from
+                # gravitational potential energy
                 
 
             for bar in bars_ji:
@@ -82,7 +84,8 @@ class TensegrityStruct(CTS.CableTensegrityStruct):
                 dist = np.linalg.norm(node_i - node_j)
 
                 grad_node += self.c / rest_length ** 2 * (node_i - node_j) * (1 - rest_length / dist)
-                grad_node[-1] += self.bar_density * rest_length / 2
+                grad_node[-1] += self.bar_density * rest_length / 2 #Distribution from gravitational
+                # potential energy
 
             grad[node_index-self.num_of_fixed, :] = grad_node
         grad = grad.ravel()

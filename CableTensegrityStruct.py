@@ -96,11 +96,7 @@ class CableTensegrityStruct:
         """
         Calculates the gravitational potential energy of
         the external loads in the structure
-
-        :return: Gravitational potential energy of all external loads
         """
-        #mass_indices = self.masses[:, 0].astype(np.int64)
-        #return np.dot(self.masses[:, 1],self.nodes[mass_indices, 2])
         return np.dot(self.masses, self.nodes[:,2])
 
 
@@ -108,8 +104,6 @@ class CableTensegrityStruct:
         """
         Calculates the sum of the elastic energies of the
         cables in the structure.
-
-        :return: Sum of elastic energies of the cables
         """
         energy=0
         for cable in self.cables:
@@ -125,17 +119,13 @@ class CableTensegrityStruct:
     def E(self):
         """
         Calculates the total energy of the structure
-
-        :return: Total energy of the structure
         """
         return self.E_ext()+self.E_cable_elast()
 
     def gradient(self):
         """
-        Calculates the gradient of our objective function
+        Calculates the gradient of the energy function
         and returns a 1D ndarray of length 3*the number of nodes
-
-        :return: The gradient of the energy function
         """
        
         grad = np.zeros((self.num_of_free_nodes, 3))
@@ -164,7 +154,8 @@ class CableTensegrityStruct:
                 if dist > rest_length:
                     grad_node+=self.k/rest_length**2*(node_i-node_j)*(1-rest_length/dist)
     
-            grad_node[-1] += self.masses[node_index]
+            grad_node[-1] += self.masses[node_index] # Contribution from external loads to 
+            # the z component of the current subvector of the gradient
 
             grad[node_index-self.num_of_fixed, :] = grad_node
         grad = grad.ravel()
@@ -173,7 +164,7 @@ class CableTensegrityStruct:
     def update_nodes(self, new_X):
         """
         Function to ensure that the properties of our object are updated properly when we find a new configuration
-        :param new_X: Vector of length 3 times the number of nodes
+        :param new_X: Vector of length 3 times the number of free nodes
         """
         self.nodes[self.num_of_fixed:,:] = np.reshape(new_X, (self.num_of_free_nodes, 3))
         self.X = new_X
