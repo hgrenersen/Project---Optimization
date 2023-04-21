@@ -6,7 +6,7 @@ importlib.reload(TS)
 import FreeStandingStruct as FSS
 importlib.reload(FSS)
 
-def plot_structure(struct):
+def plot_structure(struct, show_edge_legend=True, show_node_legend=True, show_nodes = True, show_edges = True, show_parameters = True):
     """
     Returns a plot of the structure
     """
@@ -30,13 +30,13 @@ def plot_structure(struct):
     #plt.legend(np.around(points, decimals = 3), bbox_to_anchor = (1 , 1), title=title)
 
     if struct.cables.size:
-        cable_indices = struct.cables[:, :-1].astype(dtype=np.int16)
+        cable_indices = struct.cables[:, :-1]
         for point in cable_indices:
             ax.plot(points[point, 0], points[point, 1], points[point, 2],"--", color="green", label="cable")
 
     if type(struct) == TS.TensegrityStruct or type(struct) == FSS.FreeStandingStruct:
         if struct.bars.size:
-            bar_indices = struct.bars[:, :-1].astype(dtype=np.int16)
+            bar_indices = struct.bars[:, :-1]
             for point in bar_indices:
                 ax.plot(points[point, 0], points[point, 1], points[point, 2],"-", color="hotpink", label="bar")
 
@@ -57,10 +57,60 @@ def plot_structure(struct):
     if "bar" in legend_dict:
         edge_dict["bar"] = legend_dict["bar"]
 
-    node_legend = plt.legend(node_dict.values(), node_dict.keys(), loc = 'upper left', title = "Nodes")
+    #Adding legends
 
-    ax.add_artist(node_legend)
-    ax.legend(edge_dict.values(), edge_dict.keys(), loc='upper right', title = "Edges")
+    if show_node_legend:
+        node_legend = plt.legend(node_dict.values(), node_dict.keys(), loc = 'upper left', title = "Nodes")
+        ax.add_artist(node_legend)
+    if show_edge_legend:
+        ax.legend(edge_dict.values(), edge_dict.keys(), loc='upper right', title = "Edges")
+
+    #Adding text boxes with information
+    if show_nodes:
+        nodestr = "Nodes:\n"
+        nodestr += np.array2string(struct.nodes, formatter = {'float_kind':lambda x: "%.3e" % x})
+        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+        ax.text2D(1.15, 0.95, nodestr, transform=ax.transAxes, fontsize=10,
+                verticalalignment='top', bbox=props)
+        
+    if show_edges:
+        edgestr = "Edges:"
+        i=0
+        if struct.cables.size:
+            for cable in struct.cables:
+                if i%4==0:
+                    edgestr += "\n"
+                edgestr += r"  $\ell_{%s %s}$: %s "%(cable[0]+1, cable[1]+1, cable[2])
+                i+=1
+        if type(struct) == TS.TensegrityStruct or type(struct) == FSS.FreeStandingStruct:
+            if struct.bars.size:
+                for bar in struct.bars:
+                    if i%4==0:
+                        edgestr += "\n"
+                    edgestr += r"  $\ell_{%s %s}$: %s "%(bar[0]+1, bar[1]+1, bar[2])
+                    i+=1
+        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+        # place a text box in upper left in axes coords
+        ax.text2D(1.15, 0.5, edgestr, transform=ax.transAxes, fontsize=10,
+                verticalalignment='top', bbox=props)
+        
+
+    if show_parameters:
+        paramstr = "Parameters:"
+        if struct.cables.size:
+            paramstr += f"\nk = {struct.k}"
+        if type(struct) == TS.TensegrityStruct or type(struct) == FSS.FreeStandingStruct:
+            if struct.bars.size:
+                paramstr += f"\nc = {struct.c}"
+            if type(struct) == FSS.FreeStandingStruct:
+                paramstr += f"\npenalty = {struct.penalty}"
+        
+        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+        # place a text box in upper left in axes coords
+        ax.text2D(1.15, 0.2, paramstr, transform=ax.transAxes, fontsize=10,
+                verticalalignment='top', bbox=props)
+
+
     return fig, ax
 
 def animate(struct):
@@ -102,11 +152,42 @@ def convergence_plot(norms):
     ax.grid()
     return ax
 
-def nodes(struct, ax):
-    text = "Nodes:"
-    if struct.num_of_fixed:
-        text += f"\nThe first {struct.num_of_fixed} are fixed"
-    plt.legend(struct.nodes, bbox_to_anchor = (1 , 1), title=text)
+def nodes(struct, scientific=False):
+    #text = "Coordinates:"
+    #if struct.num_of_fixed:
+     #   text += f"\nThe first {struct.num_of_fixed} are fixed"
+    #plt.legend(struct.nodes, bbox_to_anchor = (1 , 1), title=text)
+
+    nodestr = "Nodes:\n"
+    nodestr += np.array2string(struct.nodes)
+
+    #if scientific:
+    #    for node in struct.nodes:
+    #        nodestr += "\n["
+    #        for i in range(2):
+    #            nodestr += f"{node[i]:.3e}, "
+    #        nodestr += f"{node[-1]:.3e}]"
+    #else:
+    #    for node in struct.nodes:
+    #        nodestr += "\n" + str(node) 
 
 
+    fig, ax = plt.subplots()
 
+    props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+    # place a text box in upper left in axes coords
+    ax.text(0.05, 0.95, nodestr, transform=ax.transAxes, fontsize=10,
+            verticalalignment='top', bbox=props)
+
+    #fig, ax = plot(struct)
+    #textstr = "Our structure has the following connections and parameters\n"
+    #for cable in struct.cables:
+        #textstr+=r"Node " + str(cable[0]+1) +" is connected to node " + str(cable[1]+1) +\
+        #      " by a cable with resting length " + str(cable[2]) + "\n"
+     #   textstr += r"$l_{%s %s}$: %s "%(cable[0]+1, cable[1]+1, cable[2])+"   "
+    #textstr+= "k = " +str(struct.k)
+    #props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+    #ax.text(0.05, 0.95, 0.5, s=textstr, transform=ax.transAxes, fontsize=12,
+     #       verticalalignment='top', bbox=props)
+    ax.axis('off')
+    return fig, ax
