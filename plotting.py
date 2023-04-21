@@ -1,19 +1,18 @@
 import importlib
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.gridspec import GridSpec
 import TensegrityStruct as TS
 importlib.reload(TS)
 import FreeStandingStruct as FSS
 importlib.reload(FSS)
 
-def plot_structure(struct, ax, show_edge_legend=True, show_node_legend=True, show_nodes = False, show_edges = False, show_parameters = False):
+def plot_structure(struct, ax, title="Tensegrity structure"):
     """
     Returns a plot of the structure
     """
-    #fig, ax = plt.subplots(projection='3d')
-    #fig = plt.figure()
-    #ax = fig.add_subplot(projection='3d')
     # Set the axis labels
+    ax.set_title(title)
     ax.set_xlabel('x')
     ax.set_ylabel('y')
     ax.set_zlabel('z')
@@ -40,7 +39,6 @@ def plot_structure(struct, ax, show_edge_legend=True, show_node_legend=True, sho
                 ax.plot(points[point, 0], points[point, 1], points[point, 2],"-", color="hotpink", label="bar")
 
     # Creating legends
-
     handles, labels = ax.get_legend_handles_labels()
     legend_dict = dict(zip(labels, handles))
 
@@ -57,78 +55,11 @@ def plot_structure(struct, ax, show_edge_legend=True, show_node_legend=True, sho
         edge_dict["bar"] = legend_dict["bar"]
 
     #Adding legends
+    node_legend = ax.legend(node_dict.values(), node_dict.keys(), loc = 'upper left', title = "Nodes")
+    ax.add_artist(node_legend)
 
-    if show_node_legend:
-        node_legend = ax.legend(node_dict.values(), node_dict.keys(), loc = 'upper left', title = "Nodes")
-        ax.add_artist(node_legend)
-        #ax.legend(node_dict.values(), node_dict.keys(), loc = 'upper left', title = "Nodes")
-    if show_edge_legend:
-        edge_legend = ax.legend(edge_dict.values(), edge_dict.keys(), loc = 'upper right', title = "Edges")
-        ax.add_artist(edge_legend)
-        #ax2 = ax.twinx()
-      #  ax2.get_yaxis().set_visible(False)
-       # ax2.legend(edge_dict.values(), edge_dict.keys(), loc='upper right', title = "Edges")
-
-    #Adding text boxes with information
-    if show_nodes:
-        nodestr = "Nodes:"
-        i = 1
-        for node in struct.nodes:
-            nodestr += f"\n{i}: ["
-            for coord in node:
-                if np.abs(coord) < 1e-4 and coord != 0:
-                    nodestr += f"{coord:.3e}  ".ljust(10)
-                else:
-                    nodestr += f"{round(coord,4)}  ".ljust(10)
-            nodestr += "]"
-            #nodestr += np.array2string(struct.nodes, formatter = {'float_kind':lambda x: "%.3e" % x})
-            i+=1
-        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        ax.text2D(1.15, 0.95, nodestr, transform=ax.transAxes, fontsize=10,
-                verticalalignment='top', bbox=props)
-        
-    if show_edges:
-        edgestr = "Edges:"
-        i=0
-        if struct.cables.size:
-            for cable in struct.cables:
-                if i%4==0:
-                    edgestr += "\n"
-                edgestr += r"  $\ell_{%s %s}$: %s "%(cable[0]+1, cable[1]+1, cable[2])
-                i+=1
-        if type(struct) == TS.TensegrityStruct or type(struct) == FSS.FreeStandingStruct:
-            if struct.bars.size:
-                for bar in struct.bars:
-                    if i%4==0:
-                        edgestr += "\n"
-                    edgestr += r"  $\ell_{%s %s}$: %s "%(bar[0]+1, bar[1]+1, bar[2])
-                    i+=1
-        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        # place a text box in upper left in axes coords
-        ax.text2D(1.15, 0.5, edgestr, transform=ax.transAxes, fontsize=10,
-                verticalalignment='top', bbox=props)
-        
-
-    if show_parameters:
-        paramstr = "Parameters:"
-        if struct.cables.size:
-            paramstr += f"\nk = {struct.k}"
-        if type(struct) == TS.TensegrityStruct or type(struct) == FSS.FreeStandingStruct:
-            if struct.bars.size:
-                paramstr += f"\nc = {struct.c}"
-                paramstr += "\n" + rf"$\rho g$ = {struct.bar_density}"
-        if np.all(struct.masses==0):
-            paramstr += "\n"+r"$mg=0$"
-        else:
-            for i in range(len(struct.masses)):
-                if i%4==0:
-                    paramstr += "\n"
-                paramstr += rf"$m_{i+1}g=${round(struct.masses[i],4)}  "
-                
-        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        # place a text box in upper left in axes coords
-        ax.text2D(1.15, 0.2, paramstr, transform=ax.transAxes, fontsize=10,
-                verticalalignment='top', bbox=props)
+    edge_legend = ax.legend(edge_dict.values(), edge_dict.keys(), loc = 'upper right', title = "Edges")
+    ax.add_artist(edge_legend)
 
 def convergence_plot(norms, ax):
     ax.set_title("Convergence plot")
@@ -138,8 +69,8 @@ def convergence_plot(norms, ax):
     ax.set_ylabel("Gradient norm")
     ax.grid()
 
-def nodes(struct, ax):
-    nodestr = "Nodes:"
+def nodes(struct, ax, title="Nodes:"):
+    nodestr = title
     i = 1
     for node in struct.nodes:
         nodestr += f"\n{i}: ["
@@ -161,29 +92,32 @@ def nodes(struct, ax):
     ax.text(0.05, 0.95, nodestr, transform=ax.transAxes, fontsize=10,verticalalignment='top', bbox=props)
     ax.axis('off')
     
-def edges(struct, ax):
-    edgestr = "Edges:"
+def edges(struct, ax, many_params=False, title="Edges:"):
+    if many_params:
+        linebreak = lambda x : x%2==0
+    else:
+        linebreak = lambda x : x%3==0
+    edgestr = title
     i=0
     if struct.cables.size:
         for cable in struct.cables:
-            if i%4==0:
+            if linebreak(i):
                 edgestr += "\n"
             edgestr += r"  $\ell_{%s %s}$: %s "%(cable[0]+1, cable[1]+1, cable[2])
             i+=1
     if type(struct) == TS.TensegrityStruct or type(struct) == FSS.FreeStandingStruct:
         if struct.bars.size:
             for bar in struct.bars:
-                if i%4==0:
+                if linebreak(i):
                     edgestr += "\n"
                 edgestr += r"  $\ell_{%s %s}$: %s "%(bar[0]+1, bar[1]+1, bar[2])
                 i+=1
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-    # place a text box in upper left in axes coords
     ax.text(0.05, 0.95, edgestr, transform=ax.transAxes, fontsize=10,verticalalignment='top', bbox=props)
     ax.axis('off')
     
-def parameters(struct, ax):
-    paramstr = "Parameters:"
+def parameters(struct, ax, title="Parameters:"):
+    paramstr = title
     if struct.cables.size:
         paramstr += f"\nk = {struct.k}"
     if type(struct) == TS.TensegrityStruct or type(struct) == FSS.FreeStandingStruct:
@@ -199,7 +133,59 @@ def parameters(struct, ax):
             paramstr += rf"$m_{i+1}g=${round(struct.masses[i],4)}  "
 
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-    # place a text box in upper left in axes coords
     ax.text(0.05, 0.95, paramstr, transform=ax.transAxes, fontsize=10,verticalalignment='top', bbox=props)
     ax.axis('off')
     
+def main_plot(struct, struct_BFGS, norms, filename="struct.png", many_params=False):
+    fig = plt.figure(layout='constrained', figsize=(14, 5)) #creating figure
+    subfigs = fig.subfigures(1, 2, width_ratios=[5,3]) #creating subfigs (left and right)
+    axs = [0]*7 #to be filled with axes
+    gs = GridSpec(1, 2) #gridspec for tensegrity structure plot
+    axs[0] = subfigs[0].add_subplot(gs[0,0],projection='3d') #adding 3d axes
+    axs[1] = subfigs[0].add_subplot(gs[0,1],projection='3d')
+
+    subfigsRight = subfigs[1].subfigures(2, 1, height_ratios=[3,2]) #right subfigs (up and down)
+
+    if many_params:
+        gs = GridSpec(2, 3, height_ratios=[5,3]) #gridspec for info box and convergence plot
+        axs[2] = subfigsRight[0].add_subplot(gs[0,0]) #initialized nodes
+        axs[3] = subfigsRight[0].add_subplot(gs[0,1]) #resulting nodes
+        axs[4] = subfigsRight[0].add_subplot(gs[0,2]) #edges
+        axs[5] = subfigsRight[0].add_subplot(gs[1,:]) #parameters
+    else:
+        gs = GridSpec(2, 2, height_ratios=[5,3]) #gridspec for info box and convergence plot
+        axs[2] = subfigsRight[0].add_subplot(gs[0,0]) #initialized nodes
+        axs[3] = subfigsRight[0].add_subplot(gs[0,1]) #resulting nodes
+        axs[4] = subfigsRight[0].add_subplot(gs[1,0]) #edges
+        axs[5] = subfigsRight[0].add_subplot(gs[1,1]) #parameters
+        
+    axs[6] = subfigsRight[1].add_subplot()
+
+    subfigs[0].set_facecolor('0.9') #setting facecolor
+    subfigsRight[0].set_facecolor('0.9')
+    subfigsRight[1].set_facecolor('0.9')
+
+    #initialization plot
+    plot_structure(struct, axs[0], title="Initialized structure")
+
+    #resulting structure
+    plot_structure(struct_BFGS, axs[1], title="Resulting structure")
+
+    #initialization nodes
+    nodes(struct, axs[2], title="Initialized nodes:")
+
+    #resulting nodes
+    nodes(struct_BFGS, axs[3], title="Resulting nodes:")
+
+    #edges
+    edges(struct, axs[4], many_params)
+
+    #paramters
+    parameters(struct, axs[5])
+
+    #convergence plot
+    convergence_plot(norms, axs[6])
+
+    #saving and showing figure
+    plt.savefig(filename)
+    plt.show()
