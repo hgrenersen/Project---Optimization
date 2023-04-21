@@ -9,7 +9,7 @@ importlib.reload(FSS)
 
 def plot_structure(struct, ax, title="Tensegrity structure"):
     """
-    Returns a plot of the structure
+    Plots the structure in a given axes
     """
     # Set the axis labels
     ax.set_title(title)
@@ -28,13 +28,13 @@ def plot_structure(struct, ax, title="Tensegrity structure"):
         ax.text(point[0], point[1], point[2]+0.3, i+1, color = "blue")
 
     if struct.cables.size:
-        cable_indices = struct.cables[:, :-1]
+        cable_indices = struct.cables[:, :-1].astype(dtype=np.int16)
         for point in cable_indices:
             ax.plot(points[point, 0], points[point, 1], points[point, 2],"--", color="green", label="cable")
 
     if type(struct) == TS.TensegrityStruct or type(struct) == FSS.FreeStandingStruct:
         if struct.bars.size:
-            bar_indices = struct.bars[:, :-1]
+            bar_indices = struct.bars[:, :-1].astype(dtype=np.int16)
             for point in bar_indices:
                 ax.plot(points[point, 0], points[point, 1], points[point, 2],"-", color="hotpink", label="bar")
 
@@ -62,6 +62,9 @@ def plot_structure(struct, ax, title="Tensegrity structure"):
     ax.add_artist(edge_legend)
 
 def convergence_plot(norms, ax):
+    """
+    Plots structure in given axes
+    """
     ax.set_title("Convergence plot")
     ax.set_yscale('log')
     ax.plot(np.arange(norms.size), norms)
@@ -70,6 +73,9 @@ def convergence_plot(norms, ax):
     ax.grid()
 
 def nodes(struct, ax, title="Nodes:"):
+    """
+    Prints nodes in given axes
+    """
     nodestr = title
     i = 1
     for node in struct.nodes:
@@ -89,10 +95,13 @@ def nodes(struct, ax, title="Nodes:"):
         nodestr += "]"
         i+=1
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-    ax.text(0.05, 0.95, nodestr, transform=ax.transAxes, fontsize=10,verticalalignment='top', bbox=props)
+    ax.text(0.05, 0.95, nodestr, transform=ax.transAxes, fontsize=8,verticalalignment='top', bbox=props)
     ax.axis('off')
     
 def edges(struct, ax, many_params=False, title="Edges:"):
+    """
+    Prints edges in given axes
+    """
     if many_params:
         linebreak = lambda x : x%2==0
     else:
@@ -113,10 +122,13 @@ def edges(struct, ax, many_params=False, title="Edges:"):
                 edgestr += r"  $\ell_{%s %s}$: %s "%(bar[0]+1, bar[1]+1, bar[2])
                 i+=1
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-    ax.text(0.05, 0.95, edgestr, transform=ax.transAxes, fontsize=10,verticalalignment='top', bbox=props)
+    ax.text(0.05, 0.95, edgestr, transform=ax.transAxes, fontsize=8,verticalalignment='top', bbox=props)
     ax.axis('off')
     
 def parameters(struct, ax, title="Parameters:"):
+    """
+    Prints parameters in given axes
+    """
     paramstr = title
     if struct.cables.size:
         paramstr += f"\nk = {struct.k}"
@@ -133,10 +145,14 @@ def parameters(struct, ax, title="Parameters:"):
             paramstr += rf"$m_{i+1}g=${round(struct.masses[i],4)}  "
 
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-    ax.text(0.05, 0.95, paramstr, transform=ax.transAxes, fontsize=10,verticalalignment='top', bbox=props)
+    ax.text(0.05, 0.95, paramstr, transform=ax.transAxes, fontsize=8,verticalalignment='top', bbox=props)
     ax.axis('off')
     
 def main_plot(struct, struct_BFGS, norms, filename="struct.png", many_params=False):
+    """
+    PLots a figure containing initialization structure, resulting structure, 
+    nodes, edges, parameters and a convergence plot
+    """
     fig = plt.figure(layout='constrained', figsize=(14, 5)) #creating figure
     subfigs = fig.subfigures(1, 2, width_ratios=[5,3]) #creating subfigs (left and right)
     axs = [0]*7 #to be filled with axes

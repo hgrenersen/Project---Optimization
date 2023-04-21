@@ -10,8 +10,7 @@ def BFGS(struct,
          max_extrapolation_iterations = 50,
          max_interpolation_iterations = 20,
          rho = 2.0,
-         return_norms = False,
-         return_images = False):
+         return_norms = False):
     """
     Calculates a stable configuration for the structure, using BFGS
     and Wolfe conditions.
@@ -54,13 +53,14 @@ def BFGS(struct,
             norms.append(norm)
 
     print(f"BFGS used {iter} iterations")
-    if return_images:
-        if return_norms:
-            return np.array(norms)
     if return_norms:
         return np.array(norms)
 
 def NextStep(struct_copy, original_X, alpha, p):
+    """
+    Helping function used in StrongWolfe() in order to
+    make a step with a given step size. 
+    """
     next_x = original_X+alpha*p
     struct_copy.update_nodes(next_x)
     next_E = struct_copy.E()
@@ -158,14 +158,24 @@ def StrongWolfe(struct, p,
     return next_x, next_E, next_grad
 
 
-def quadratic_penalty_method(struct, penalty0, tolerances, maxiter_BFGS = 50, TOL=1e-12, max_penalty = 1e6):
+def quadratic_penalty_method(struct, penalty0, tolerances, maxiter_BFGS = 50, TOL=1e-12, max_penalty = 1e6, return_norms = False):
     """
-    Uses BFGS to calculate 
+    Uses BFGS to calculate more stable configurations for different penalties.
+    It is important that the initial penalty is high and that BFGS is allowed
+    sufficient iterations in order to get a good starting point for later BFGS
+    runs with higher penalties. This is of course trivial, and some tuning of
+    parameters will likely be needed.
     """
     struct.penalty = penalty0
     K = tolerances.size
+    if return_norms:
+        norms_tot = np.array([])
     for k in range(K):
-        BFGS(struct, tol=tolerances[k], maxiter=maxiter_BFGS)
+        if return_norms:
+            norms = BFGS(struct, tol=tolerances[k], maxiter=maxiter_BFGS, return_norms=True)
+            norms_tot = np.concatenate((norms_tot, norms))
+        else:
+            BFGS(struct, tol=tolerances[k], maxiter=maxiter_BFGS)
         norm_grad = np.linalg.norm(struct.gradient())
 
         if norm_grad <= TOL:
@@ -173,3 +183,5 @@ def quadratic_penalty_method(struct, penalty0, tolerances, maxiter_BFGS = 50, TO
 
         if struct.penalty < max_penalty:
             struct.penalty *= 10
+    if return_norms:
+        return norms_tot

@@ -22,7 +22,6 @@ class CableTensegrityStruct:
         of the node to which the load belongs, and in the 
         other column the corresponding weight
     cables : ndarray
-        ##### kanskje droppe 'in which for row i'?
         3D array in which for row i, the first column is 
         the index of a certain node, and the second column 
         is the index of the node which it is connected to
@@ -74,7 +73,6 @@ class CableTensegrityStruct:
         k : int
             material parameter which affects the elastic energy
        """
-       # Føler vi må ha dette:
        self.num_of_fixed = num_of_fixed_nodes
        self.nodes = nodes
        self.masses = masses
@@ -82,7 +80,7 @@ class CableTensegrityStruct:
        self.k = k
     
        self.num_of_nodes = len(nodes)
-       self.X = np.ravel(nodes[num_of_fixed_nodes:]) # Vector form
+       self.X = np.ravel(nodes[num_of_fixed_nodes:]) # Vector form of the nodes
        self.num_of_free_nodes = self.num_of_nodes-num_of_fixed_nodes
 
 
