@@ -189,13 +189,20 @@ def StrongWolfe(struct, p,
     return next_x, next_E, next_grad
 
 
-def quadratic_penalty_method(struct, penalty0, tolerances, maxiter_BFGS = 50, TOL=1e-12, max_penalty = 1e6):
+def quadratic_penalty_method(struct, penalty0, tolerances, maxiter_BFGS = 50, TOL=1e-12, max_penalty = 1e6, return_norms=False):
     #struct_copy = copy.deepcopy(struct)
     #struct_copy.penalty = penalty0
     struct.penalty = penalty0
     K = tolerances.size
+    if return_norms:
+        norms_tot = np.array([])
     for k in range(K):
-        BFGS(struct, tol=tolerances[k], maxiter=maxiter_BFGS)
+        if return_norms:
+            norms = BFGS(struct, tol=tolerances[k], maxiter=maxiter_BFGS, return_norms=True)
+            norms_tot = np.concatenate((norms_tot, norms))
+        else:
+            BFGS(struct, tol=tolerances[k], maxiter=maxiter_BFGS)
+            
         norm_grad = np.linalg.norm(struct.gradient())
 
         if norm_grad <= TOL:
@@ -203,6 +210,8 @@ def quadratic_penalty_method(struct, penalty0, tolerances, maxiter_BFGS = 50, TO
 
         if struct.penalty < max_penalty:
             struct.penalty *= 10
+    if return_norms:
+        return norms_tot
 
 
 """

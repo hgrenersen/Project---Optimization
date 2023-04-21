@@ -56,18 +56,6 @@ class FreeStandingStruct(TS.TensegrityStruct):
         x3 = self.nodes[:, -1] #third coordinate of every node
         c_min = np.minimum(x3, np.zeros(self.num_of_nodes)) #minimum of 0 and constraint (x3)
         return super().E()+self.penalty/2*np.dot(c_min, c_min)
-    """
-    def E(self):
-        '''
-        The object's objective function, i.e. the quadratic penalty function. This was done this way as this is
-        really the function we want to minimize for these type of objects, not only its energy. The function
-        calculates the function's energy if the penalty is first set to 0.
-
-        :return: The value of the structure's objective function
-        '''
-        x3 = self.nodes[:, -1]
-        return super().E()-self.penalty*np.sum(np.log(x3))
-    """
 
     def update_nodes(self, new_X):
         self.nodes[0, 2] = new_X[0] #updates the thirs coordinate of the first node
@@ -91,22 +79,3 @@ class FreeStandingStruct(TS.TensegrityStruct):
         grad = super().gradient()[2:] + penalty_grad
 
         return grad
-
-
-    """
-    def gradient(self):
-        '''
-        Uses previous implementations of the gradient in order to calculate the gradient of our new objective
-        function, with the first two components equal to zero, as these represent fixed coordinates.
-
-        :return: The gradient of the objective function
-        '''
-        penalty_grad = np.zeros(self.X.size) # additional gradient term
-        x3 = self.nodes[:, -1]
-        
-        penalty_grad[::3] = self.penalty/x3
-        #print(penalty_grad)
-        grad = super().gradient()[2:] - penalty_grad
-        
-        return grad
-    """

@@ -1,47 +1,6 @@
 import numpy as np
 import copy
 
-def Wolfe_step(struct_copy, original_X, alpha, pk):
-    next_x = original_X+alpha*pk
-    struct_copy.update_nodes(next_x)
-    next_value = struct_copy.E()
-    next_grad = struct_copy.gradient()
-    return next_x, next_value, next_grad
-
-def Wolfe(struct, pk, fk, grad_k, c1=1e-4, c2=0.9, alpha=1, maxiter=200):
-    alpha_min = 0
-    alpha_max = np.inf
-    struct_copy = copy.deepcopy(struct)
-    original_X = struct.X.copy() #Ensures that we get a deep copy
-
-    next_x, next_f, next_grad = Wolfe_step(struct_copy, original_X, alpha, pk)
-    initial_descent = np.dot(grad_k, pk)
-
-    Armijo = next_f <=fk + c1*alpha*initial_descent
-    curve_cond = np.dot(next_grad, pk) >= c2*initial_descent
-
-    niter=0
-    while niter<maxiter:
-        if not Armijo:
-            alpha_max = alpha
-            alpha = (alpha_min+alpha_max)/2
-        elif not curve_cond:
-            alpha_min = alpha
-            if alpha_max == np.inf:
-                alpha *= 2
-            else:
-                alpha = (alpha_min+alpha_max)/2
-        else:
-            return next_x, next_f, next_grad
-
-        next_x, next_f, next_grad = Wolfe_step(struct_copy, original_X, alpha, pk)
-
-        Armijo = next_f <= fk + c1*alpha*initial_descent
-        curve_cond = np.dot(next_grad, pk) >= c2*initial_descent
-
-        niter += 1
-    return next_x, next_f, next_grad
-
 def BFGS(struct,
          tol=1e-12,
          maxiter = 10000,
@@ -189,33 +148,21 @@ def StrongWolfe(struct, p,
     return next_x, next_E, next_grad
 
 
-def quadratic_penalty_method(struct, penalty0, tolerances, maxiter_BFGS = 50, TOL=1e-12, max_penalty = 1e6):
-    #struct_copy = copy.deepcopy(struct)
-    #struct_copy.penalty = penalty0
+def quadratic_penalty_method(struct, penalty0, tolerances, maxiter_BFGS = 50, TOL=1e-12, max_penalty = 1e6, return_norms=False):
     struct.penalty = penalty0
     K = tolerances.size
+    if return_norms:
+        norms_tot = np.array([])
     for k in range(K):
-        BFGS(struct, tol=tolerances[k], maxiter=maxiter_BFGS)
+        if return_norms:
+            norms = BFGS(struct, tol=tolerances[k], maxiter=maxiter_BFGS, return_norms=True)
+            norms_tot = np.concatenate((norms_tot, norms))
+        else:
+            BFGS(struct, tol=tolerances[k], maxiter=maxiter_BFGS)
         norm_grad = np.linalg.norm(struct.gradient())
-
         if norm_grad <= TOL:
             break
-
         if struct.penalty < max_penalty:
             struct.penalty *= 10
-
-
-"""
-def barrier_method(struct, penalty0, tolerances, maxiter_BFGS = 50, TOL=1e-12, max_penalty = 1e6):
-    struct.penalty = penalty0
-    K = tolerances.size
-    for k in range(K):
-        BFGS(struct, tol=tolerances[k], maxiter=maxiter_BFGS)
-        norm_grad = np.linalg.norm(struct.gradient())
-
-        if norm_grad <= TOL:
-            break
-
-        if struct.penalty < max_penalty:
-            struct.penalty /= 10
-"""
+    if return_norms:
+        return norms_tot
